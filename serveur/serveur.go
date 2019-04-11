@@ -37,6 +37,8 @@ func NewHelloService(s HelloStore) *HelloService {
 //Register dfs
 func (s *HelloService) Register(r *mux.Router) {
 	r.HandleFunc("/hello", s.AddHello).Methods("POST")
+	r.HandleFunc("/hello", s.DeleteHello).Methods("DELETE")
+	r.HandleFunc("/hello", s.SayHello).Methods("GET")
 }
 
 //AddHello : Add a new language in the store
@@ -60,14 +62,15 @@ func (s *HelloService) AddHello(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	bodyResp, _ := json.Marshal(bodyResp{"Language added"})
-	res.Write(bodyResp)
+	bodyResp, err := json.Marshal(bodyResp{"Language added"})
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+	}
+	_, err = res.Write(bodyResp)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+	}
 
-}
-
-//Deleter fds
-func (s *HelloService) Deleter(r *mux.Router) {
-	r.HandleFunc("/hello", s.DeleteHello).Methods("DELETE")
 }
 
 //DeleteHello : Delete a language of a store
@@ -85,17 +88,18 @@ func (s *HelloService) DeleteHello(res http.ResponseWriter, req *http.Request) {
 	}
 
 	if err := s.str.DeleteLang(lang[0]); err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		http.Error(res, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	bodyResp, _ := json.Marshal(bodyResp{"Language deleted"})
-	res.Write(bodyResp)
-}
-
-//Sayer sfdf
-func (s *HelloService) Sayer(r *mux.Router) {
-	r.HandleFunc("/hello", s.SayHello).Methods("GET")
+	bodyResp, err := json.Marshal(bodyResp{"Language deleted"})
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+	}
+	_, err = res.Write(bodyResp)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 //SayHello : return the traduction of hello in the language asked
@@ -114,11 +118,17 @@ func (s *HelloService) SayHello(res http.ResponseWriter, req *http.Request) {
 
 	hello, err := s.str.Hello(lang[0])
 	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		http.Error(res, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	bodyResp, _ := json.Marshal(bodyResp{hello})
-	res.Write(bodyResp)
+	bodyResp, err := json.Marshal(bodyResp{hello})
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+	}
+	_, err = res.Write(bodyResp)
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusInternalServerError)
+	}
 
 }

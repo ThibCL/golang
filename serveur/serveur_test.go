@@ -14,18 +14,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createBody(lang string, hello string) *bytes.Buffer {
+func createBody(lang string, hello string) (*bytes.Buffer, error) {
 	var body addLanguageRequest
 	body.Lang = lang
 	body.Hello = hello
-	buf, _ := json.Marshal(body)
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return bytes.NewBuffer(make([]byte, 0)), err
+	}
 	buff := bytes.NewBuffer(buf)
-	return buff
+	return buff, nil
 }
 
 func TestAddHello(t *testing.T) {
 
-	buf := createBody("en", "hello")
+	buf, err := createBody("en", "hello")
+	require.NoError(t, err)
 	str := new(mocks.HelloStore)
 
 	str.On("AddLang", "en", "hello").Return(nil)
@@ -46,7 +50,8 @@ func TestAddHello(t *testing.T) {
 
 func TestAddHelloStoreFunctionErr(t *testing.T) {
 
-	buf := createBody("En", "hello")
+	buf, err := createBody("En", "hello")
+	require.NoError(t, err)
 	str := new(mocks.HelloStore)
 	str.On("AddLang", "en", "hello").Return(errors.New("Already exists"))
 
@@ -66,7 +71,8 @@ func TestAddHelloStoreFunctionErr(t *testing.T) {
 
 func TestAddHellovalidateLangErr(t *testing.T) {
 
-	buf := createBody("Eng", "hello")
+	buf, err := createBody("Eng", "hello")
+	require.NoError(t, err)
 	str := new(mocks.HelloStore)
 
 	req := httptest.NewRequest("POST", "http://localhost:9000/hello", buf)
@@ -149,7 +155,7 @@ func TestSayHelloStoreFunctionErr(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "Language not Known\n", string(body))
-	assert.Equal(t, 400, resp.StatusCode)
+	assert.Equal(t, 404, resp.StatusCode)
 	str.AssertNotCalled(t, "Hello")
 }
 
@@ -237,6 +243,6 @@ func TestDeleteHelloStoreFunctionErr(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "Language not Known\n", string(body))
-	assert.Equal(t, 400, resp.StatusCode)
+	assert.Equal(t, 404, resp.StatusCode)
 	str.AssertExpectations(t)
 }

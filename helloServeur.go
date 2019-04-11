@@ -16,8 +16,6 @@ func main() {
 	r := mux.NewRouter()
 	str := store.NewStore()
 	helloService := serveur.NewHelloService(&str)
-	helloService.Sayer(r)
 	helloService.Register(r)
-	helloService.Deleter(r)
 	http.ListenAndServe(":9000", r)
 }
