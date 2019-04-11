@@ -3,13 +3,12 @@ package serveur
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"errors"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/ThibCL/gotest/store"
-
+	"github.com/ThibCL/gotest/serveur/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,156 +22,197 @@ func createBody(lang string, hello string) *bytes.Buffer {
 }
 
 func TestAddHello(t *testing.T) {
-	InitializeStore()
+
 	buf := createBody("en", "hello")
+	str := new(mocks.HelloStore)
+
+	str.On("AddLang", "en", "hello").Return(nil)
 
 	req := httptest.NewRequest("POST", "http://localhost:9000/hello", buf)
 	res := httptest.NewRecorder()
-	AddHello(res, req)
+	helloService := HelloService{str}
+	helloService.AddHello(res, req)
 	resp := res.Result()
 
 	assert.Equal(t, 200, resp.StatusCode)
+	str.AssertExpectations(t)
 
 }
 
 func TestAddHelloStoreFunctionErr(t *testing.T) {
-	InitializeStore()
-	s.AddLang("en", "Hello")
+
 	buf := createBody("En", "hello")
+	str := new(mocks.HelloStore)
+	str.On("AddLang", "en", "hello").Return(errors.New("Already exists"))
 
 	req := httptest.NewRequest("POST", "http://localhost:9000/hello", buf)
 	res := httptest.NewRecorder()
-	AddHello(res, req)
+
+	helloService := HelloService{str}
+	helloService.AddHello(res, req)
 	resp := res.Result()
-	body, _ := ioutil.ReadAll(resp.Body)
+	//body, _ := ioutil.ReadAll(resp.Body)
 
 	assert.Equal(t, 400, resp.StatusCode)
-	assert.Equal(t, store.ErrAlreadyExists.Error()+"\n", string(body))
+	str.AssertExpectations(t)
 }
 
-func TestAddHelloValidationErr(t *testing.T) {
-	InitializeStore()
+func TestAddHellovalidateLangErr(t *testing.T) {
+
 	buf := createBody("Eng", "hello")
+	str := new(mocks.HelloStore)
 
 	req := httptest.NewRequest("POST", "http://localhost:9000/hello", buf)
 	res := httptest.NewRecorder()
-	AddHello(res, req)
+
+	helloService := HelloService{str}
+	helloService.AddHello(res, req)
 	resp := res.Result()
-	body, _ := ioutil.ReadAll(resp.Body)
+	//body, _ := ioutil.ReadAll(resp.Body)
 
 	assert.Equal(t, 400, resp.StatusCode)
-	assert.Equal(t, ErrWrongFormat.Error()+"\n", string(body))
+	str.AssertNotCalled(t, "AddLang")
 }
 
 func TestAddHelloErrBody(t *testing.T) {
-	InitializeStore()
+
+	str := new(mocks.HelloStore)
 
 	req := httptest.NewRequest("POST", "http://localhost:9000/hello", strings.NewReader("test"))
 	res := httptest.NewRecorder()
-	AddHello(res, req)
+
+	helloService := HelloService{str}
+	helloService.AddHello(res, req)
 	resp := res.Result()
+	//body, _ := ioutil.ReadAll(resp.Body)
 
 	assert.Equal(t, 400, resp.StatusCode)
+	str.AssertNotCalled(t, "AddLang")
 
 }
 
 func TestSayHello(t *testing.T) {
-	InitializeStore()
-	s.AddLang("en", "hello")
+	str := new(mocks.HelloStore)
+	str.On("Hello", "en").Return("Hello", nil)
 
 	req := httptest.NewRequest("GET", "http://localhost:9000/hello?lang=en", nil)
 	res := httptest.NewRecorder()
-	SayHello(res, req)
+
+	helloService := HelloService{str}
+	helloService.SayHello(res, req)
 	resp := res.Result()
+	//body, _ := ioutil.ReadAll(resp.Body)
 
 	assert.Equal(t, 200, resp.StatusCode)
+	str.AssertExpectations(t)
 
 }
+
 func TestSayHelloParamMissing(t *testing.T) {
-	InitializeStore()
+	str := new(mocks.HelloStore)
 
 	req := httptest.NewRequest("GET", "http://localhost:9000/hello", nil)
 	res := httptest.NewRecorder()
-	SayHello(res, req)
+
+	helloService := HelloService{str}
+	helloService.SayHello(res, req)
 	resp := res.Result()
-	body, _ := ioutil.ReadAll(resp.Body)
+	//body, _ := ioutil.ReadAll(resp.Body)
 
 	assert.Equal(t, 400, resp.StatusCode)
-	assert.Equal(t, "Param 'lang' missing"+"\n", string(body))
+	str.AssertNotCalled(t, "Hello")
 }
 
 func TestSayHelloStoreFunctionErr(t *testing.T) {
-	InitializeStore()
+	str := new(mocks.HelloStore)
+	str.On("Hello", "en").Return("", errors.New("Language not Known"))
 
 	req := httptest.NewRequest("GET", "http://localhost:9000/hello?lang=en", nil)
 	res := httptest.NewRecorder()
-	SayHello(res, req)
+
+	helloService := HelloService{str}
+	helloService.SayHello(res, req)
 	resp := res.Result()
-	body, _ := ioutil.ReadAll(resp.Body)
+	//body, _ := ioutil.ReadAll(resp.Body)
 
 	assert.Equal(t, 400, resp.StatusCode)
-	assert.Equal(t, store.ErrNotKnown.Error()+"\n", string(body))
+	str.AssertNotCalled(t, "Hello")
 }
 
-func TestSayHelloValidationErr(t *testing.T) {
-	InitializeStore()
+func TestSayHellovalidateLangErr(t *testing.T) {
+	str := new(mocks.HelloStore)
 
 	req := httptest.NewRequest("GET", "http://localhost:9000/hello?lang=eng", nil)
 	res := httptest.NewRecorder()
-	SayHello(res, req)
+
+	helloService := HelloService{str}
+	helloService.SayHello(res, req)
 	resp := res.Result()
-	body, _ := ioutil.ReadAll(resp.Body)
+	//body, _ := ioutil.ReadAll(resp.Body)
 
 	assert.Equal(t, 400, resp.StatusCode)
-	assert.Equal(t, ErrWrongFormat.Error()+"\n", string(body))
+	str.AssertNotCalled(t, "Hello")
 }
 
 func TestDeleteHello(t *testing.T) {
-	InitializeStore()
-	s.AddLang("en", "hello")
+	str := new(mocks.HelloStore)
+	str.On("DeleteLang", "en").Return(nil)
 
-	req := httptest.NewRequest("DELETE", "http://localhost:9000/hello?lang=en", nil)
+	req := httptest.NewRequest("GET", "http://localhost:9000/hello?lang=en", nil)
 	res := httptest.NewRecorder()
-	DeleteHello(res, req)
+
+	helloService := HelloService{str}
+	helloService.DeleteHello(res, req)
 	resp := res.Result()
+	//body, _ := ioutil.ReadAll(resp.Body)
 
 	assert.Equal(t, 200, resp.StatusCode)
+	str.AssertExpectations(t)
 }
 
-func TestDeleteHelloValidationErr(t *testing.T) {
-	InitializeStore()
+func TestDeleteHellovalidateLangErr(t *testing.T) {
+	str := new(mocks.HelloStore)
 
-	req := httptest.NewRequest("DELETE", "http://localhost:9000/hello?lang=eng", nil)
+	req := httptest.NewRequest("GET", "http://localhost:9000/hello?lang=eng", nil)
 	res := httptest.NewRecorder()
-	DeleteHello(res, req)
+
+	helloService := HelloService{str}
+	helloService.DeleteHello(res, req)
 	resp := res.Result()
-	body, _ := ioutil.ReadAll(resp.Body)
+	//body, _ := ioutil.ReadAll(resp.Body)
 
 	assert.Equal(t, 400, resp.StatusCode)
-	assert.Equal(t, ErrWrongFormat.Error()+"\n", string(body))
+	str.AssertNotCalled(t, "DeleteLang")
 }
 
 func TestDeleteHelloParamMissing(t *testing.T) {
-	InitializeStore()
+	str := new(mocks.HelloStore)
 
-	req := httptest.NewRequest("DELETE", "http://localhost:9000/hello", nil)
+	req := httptest.NewRequest("GET", "http://localhost:9000/hello", nil)
 	res := httptest.NewRecorder()
-	DeleteHello(res, req)
+
+	helloService := HelloService{str}
+	helloService.DeleteHello(res, req)
 	resp := res.Result()
+	//body, _ := ioutil.ReadAll(resp.Body)
 
 	assert.Equal(t, 400, resp.StatusCode)
+	str.AssertNotCalled(t, "DeleteLang")
 
 }
 
 func TestDeleteHelloStoreFunctionErr(t *testing.T) {
-	InitializeStore()
+	str := new(mocks.HelloStore)
+	str.On("DeleteLang", "en").Return(errors.New("Language Not Known"))
 
-	req := httptest.NewRequest("DELETE", "http://localhost:9000/hello?lang=en", nil)
+	req := httptest.NewRequest("GET", "http://localhost:9000/hello?lang=en", nil)
 	res := httptest.NewRecorder()
-	DeleteHello(res, req)
+
+	helloService := HelloService{str}
+	helloService.DeleteHello(res, req)
 	resp := res.Result()
-	body, _ := ioutil.ReadAll(resp.Body)
+	//body, _ := ioutil.ReadAll(resp.Body)
 
 	assert.Equal(t, 400, resp.StatusCode)
-	assert.Equal(t, store.ErrNotKnown.Error()+"\n", string(body))
+	str.AssertExpectations(t)
 }

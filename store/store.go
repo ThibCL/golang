@@ -1,20 +1,17 @@
 //Package store ...
 package store
 
-import (
-	"errors"
-	"strings"
-)
+import "errors"
 
 //Store : Object that store all the language supported by the api
 type Store struct {
 	lang map[string]string
 }
 
-//ErrNotKnown dsfq
+//ErrNotKnown : error that alert if  the language is not in the store
 var ErrNotKnown = errors.New("Language not known")
 
-//ErrAlreadyExists fds
+//ErrAlreadyExists : error that alert if the language is already in the store
 var ErrAlreadyExists = errors.New("Language already exists")
 
 //NewStore : Constructor for the Store Object
@@ -25,7 +22,7 @@ func NewStore() Store {
 
 //Hello : method to get hello in an language
 func (str *Store) Hello(lang string) (string, error) {
-	lang = strings.ToLower(lang)
+
 	_, exist := str.lang[lang]
 	if !exist {
 		return "", ErrNotKnown
@@ -38,7 +35,6 @@ func (str *Store) Hello(lang string) (string, error) {
 //AddLang : Method to add language to the store
 func (str *Store) AddLang(lang string, hello string) error {
 
-	lang = strings.ToLower(lang)
 	_, exist := str.lang[lang]
 	if exist {
 		return ErrAlreadyExists
@@ -51,7 +47,6 @@ func (str *Store) AddLang(lang string, hello string) error {
 //DeleteLang : Method to delete one of the language of the store
 func (str *Store) DeleteLang(lang string) error {
 
-	lang = strings.ToLower(lang)
 	_, exist := str.lang[lang]
 	if !exist {
 		return ErrNotKnown

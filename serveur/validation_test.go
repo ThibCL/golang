@@ -6,17 +6,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestValidation(t *testing.T) {
-	err := validation("en")
+func TestValidateLang(t *testing.T) {
+	lang := "en"
+	err := ValidateLang(&lang)
 	assert.Nil(t, err)
 }
 
-func TestValidationErrWrongFormat(t *testing.T) {
-	err := validation("eng")
-	assert.EqualError(t, err, ErrWrongFormat.Error())
+func TestValidateLangErrWrongFormat(t *testing.T) {
+	lang := "eng"
+	err := ValidateLang(&lang)
+	assert.EqualError(t, err, "Language should be two letter")
 }
 
-func TestValidationErrDoesNotExist(t *testing.T) {
-	err := validation("xx")
-	assert.EqualError(t, err, ErrDoesNotExist.Error())
+func TestValidateLangErrDoesNotExist(t *testing.T) {
+	lang := "xx"
+	err := ValidateLang(&lang)
+	assert.EqualError(t, err, "Language does not exist")
 }

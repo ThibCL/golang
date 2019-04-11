@@ -1,4 +1,3 @@
-//Package serveur ...
 package serveur
 
 import (
@@ -7,58 +6,52 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/ThibCL/gotest/store"
+	"github.com/gorilla/mux"
 )
+
+//HelloStore f
+type HelloStore interface {
+	Hello(string) (string, error)
+	DeleteLang(string) error
+	AddLang(string, string) error
+}
+
+//HelloService f
+type HelloService struct {
+	str HelloStore
+}
 
 type addLanguageRequest struct {
 	Lang  string `json:"lang"`
 	Hello string `json:"hello"`
 }
 
-var s store.Store
-
-//SayHello d
-func SayHello(res http.ResponseWriter, req *http.Request) {
-
-	lang, langExist := req.URL.Query()["lang"]
-	if !langExist {
-		http.Error(res, "Param 'lang' missing", http.StatusBadRequest)
-		return
-	}
-	err := validation(lang[0])
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	hello, err := s.Hello(lang[0])
-	if err != nil {
-		http.Error(res, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	io.WriteString(res, hello)
-
+//NewHelloService dsf
+func NewHelloService(s HelloStore) *HelloService {
+	return &HelloService{str: s}
 }
 
-//AddHello df
-func AddHello(res http.ResponseWriter, req *http.Request) {
+//Register dfs
+func (s *HelloService) Register(r *mux.Router) {
+	r.HandleFunc("/hello", s.AddHello).Methods("POST")
+}
+
+//AddHello : Add a new language in the store
+func (s *HelloService) AddHello(res http.ResponseWriter, req *http.Request) {
 	var newLang addLanguageRequest
 	body, _ := ioutil.ReadAll(req.Body)
-	err := json.Unmarshal(body, &newLang)
-	if err != nil {
+
+	if err := json.Unmarshal(body, &newLang); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = validation(newLang.Lang)
-	if err != nil {
+	if err := ValidateLang(&newLang.Lang); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = s.AddLang(newLang.Lang, newLang.Hello)
-	if err != nil {
+	if err := s.str.AddLang(newLang.Lang, newLang.Hello); err != nil {
 
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
@@ -68,8 +61,13 @@ func AddHello(res http.ResponseWriter, req *http.Request) {
 
 }
 
-//DeleteHello dsf
-func DeleteHello(res http.ResponseWriter, req *http.Request) {
+//Deleter fds
+func (s *HelloService) Deleter(r *mux.Router) {
+	r.HandleFunc("/hello", s.DeleteHello).Methods("DELETE")
+}
+
+//DeleteHello : Delete a language of a store
+func (s *HelloService) DeleteHello(res http.ResponseWriter, req *http.Request) {
 
 	lang, langExist := req.URL.Query()["lang"]
 	if !langExist {
@@ -77,14 +75,12 @@ func DeleteHello(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err := validation(lang[0])
-	if err != nil {
+	if err := ValidateLang(&lang[0]); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = s.DeleteLang(lang[0])
-	if err != nil {
+	if err := s.str.DeleteLang(lang[0]); err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -92,7 +88,31 @@ func DeleteHello(res http.ResponseWriter, req *http.Request) {
 	io.WriteString(res, "Language deleted")
 }
 
-//InitializeStore initialize the store
-func InitializeStore() {
-	s = store.NewStore()
+//Sayer sfdf
+func (s *HelloService) Sayer(r *mux.Router) {
+	r.HandleFunc("/hello", s.SayHello).Methods("GET")
+}
+
+//SayHello : return the traduction of hello in the language asked
+func (s *HelloService) SayHello(res http.ResponseWriter, req *http.Request) {
+
+	lang, langExist := req.URL.Query()["lang"]
+	if !langExist {
+		http.Error(res, "Param 'lang' missing", http.StatusBadRequest)
+		return
+	}
+
+	if err := ValidateLang(&lang[0]); err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	hello, err := s.str.Hello(lang[0])
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	io.WriteString(res, hello)
+
 }

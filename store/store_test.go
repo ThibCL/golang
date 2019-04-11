@@ -29,9 +29,9 @@ func TestAddLang(t *testing.T) {
 	s := NewStore()
 
 	tests := []testpair{
-		{"En", "Hello"},
-		{"It", "Buongiorno"},
-		{"Fr", "Bonjour"},
+		{"en", "Hello"},
+		{"it", "Buongiorno"},
+		{"fr", "Bonjour"},
 	}
 
 	for _, pair := range tests {
@@ -106,7 +106,7 @@ func TestHello(t *testing.T) {
 	s := NewStore()
 
 	s.AddLang("en", "Hello")
-	hello, err := s.Hello("En")
+	hello, err := s.Hello("en")
 	assert.Equal(t, nil, err)
 	assert.Equal(t, "Hello", hello)
 }

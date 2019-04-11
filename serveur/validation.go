@@ -2,25 +2,20 @@ package serveur
 
 import (
 	"errors"
+	"strings"
 
 	"golang.org/x/text/language"
 )
 
-//ErrDoesNotExist ds
-var ErrDoesNotExist = errors.New("Language does not exist")
+//ValidateLang d
+func ValidateLang(lang *string) error {
 
-//ErrWrongFormat sfd
-var ErrWrongFormat = errors.New("Language should be two letter")
-
-func validation(lang string) error {
-
-	if len(lang) != 2 {
-		return ErrWrongFormat
+	if *lang = strings.ToLower(*lang); len(*lang) != 2 {
+		return errors.New("Language should be two letter")
 	}
 
-	_, err := language.ParseBase(lang)
-	if err != nil {
-		return ErrDoesNotExist
+	if _, err := language.ParseBase(*lang); err != nil {
+		return errors.New("Language does not exist")
 	}
 	return nil
 
