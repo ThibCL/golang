@@ -2,7 +2,6 @@ package serveur
 
 import (
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -24,6 +23,10 @@ type HelloService struct {
 type addLanguageRequest struct {
 	Lang  string `json:"lang"`
 	Hello string `json:"hello"`
+}
+
+type bodyResp struct {
+	Text string `json:"text"`
 }
 
 //NewHelloService dsf
@@ -56,7 +59,8 @@ func (s *HelloService) AddHello(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
-	bodyResp, _ := json.Marshal("Language Added")
+
+	bodyResp, _ := json.Marshal(bodyResp{"Language added"})
 	res.Write(bodyResp)
 
 }
@@ -85,7 +89,8 @@ func (s *HelloService) DeleteHello(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	io.WriteString(res, "Language deleted")
+	bodyResp, _ := json.Marshal(bodyResp{"Language deleted"})
+	res.Write(bodyResp)
 }
 
 //Sayer sfdf
@@ -113,6 +118,7 @@ func (s *HelloService) SayHello(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	io.WriteString(res, hello)
+	bodyResp, _ := json.Marshal(bodyResp{hello})
+	res.Write(bodyResp)
 
 }
